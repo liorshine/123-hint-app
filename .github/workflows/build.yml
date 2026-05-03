@@ -9,23 +9,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ========================
-    # CHECKOUT CODE
-    # ========================
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ========================
-    # SETUP PYTHON
-    # ========================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    # ========================
-    # SYSTEM DEPENDENCIES
-    # ========================
     - name: Install system dependencies
       run: |
         sudo apt update
@@ -36,25 +27,21 @@ jobs:
           autoconf automake libtool pkg-config \
           libffi-dev libssl-dev
 
-    # ========================
-    # PYTHON DEPENDENCIES
-    # ========================
     - name: Install Python tools
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install cython buildozer
 
-    # ========================
-    # ANDROID SDK SETUP (FIX FULL)
-    # ========================
-    - name: Setup Android SDK
+    # ==========================
+    # ANDROID SDK FIX (FINAL)
+    # ==========================
+    - name: Setup Android SDK (FIXED)
       run: |
         export ANDROID_SDK_ROOT=$HOME/android-sdk
         mkdir -p $ANDROID_SDK_ROOT
 
         cd $HOME
 
-        # Download command line tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
 
         mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
@@ -64,35 +51,20 @@ jobs:
 
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-        # ========================
-        # ACCEPT LICENSES (FIX CRITICAL)
-        # ========================
+        # 🔥 FORCE ACCEPT LICENSE (IMPORTANT)
         yes | sdkmanager --licenses || true
 
-        # ========================
-        # INSTALL REQUIRED COMPONENTS
-        # ========================
+        # 🔥 FORCE STABLE VERSION (KHÔNG DÙNG 37)
         sdkmanager "platform-tools"
         sdkmanager "platforms;android-31"
         sdkmanager "build-tools;34.0.0"
 
-    # ========================
-    # CLEAN CACHE
-    # ========================
-    - name: Clean buildozer cache
-      run: |
-        rm -rf .buildozer
+    - name: Clean build cache
+      run: rm -rf .buildozer
 
-    # ========================
-    # BUILD APK
-    # ========================
     - name: Build APK
-      run: |
-        buildozer android debug
+      run: buildozer android debug
 
-    # ========================
-    # UPLOAD APK
-    # ========================
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
