@@ -9,45 +9,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # =========================
-    # CHECKOUT CODE
-    # =========================
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    # =========================
-    # PYTHON SETUP
-    # =========================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    # =========================
-    # SYSTEM DEPENDENCIES
-    # =========================
-    - name: Install system dependencies
+    - name: Install deps
       run: |
         sudo apt update
-        sudo apt install -y \
-          git zip unzip wget \
-          openjdk-17-jdk \
-          build-essential \
-          autoconf automake libtool pkg-config \
-          libffi-dev libssl-dev
-
-    # =========================
-    # PYTHON TOOLS
-    # =========================
-    - name: Install Python tools
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
+        sudo apt install -y git zip unzip wget openjdk-17-jdk build-essential
+        pip install --upgrade pip
         pip install cython buildozer
 
-    # =========================
-    # ANDROID SDK (HARD FIX)
-    # =========================
-    - name: Setup Android SDK
+    - name: Nuke old buildozer SDK
+      run: |
+        rm -rf ~/.buildozer/android/platform/android-sdk
+
+    - name: Setup Android SDK (manual)
       run: |
         export ANDROID_SDK_ROOT=$HOME/android-sdk
         mkdir -p $ANDROID_SDK_ROOT
@@ -63,40 +43,20 @@ jobs:
 
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-        # =========================
-        # FIX LICENSE (NO PROMPT)
-        # =========================
         yes | sdkmanager --licenses || true
 
-        # =========================
-        # FORCE STABLE VERSIONS (NO 37)
-        # =========================
         sdkmanager "platform-tools"
         sdkmanager "platforms;android-31"
         sdkmanager "build-tools;34.0.0"
 
-        # =========================
-        # SAFETY CLEAN BROKEN 37
-        # =========================
-        rm -rf $ANDROID_SDK_ROOT/build-tools/37.0.0 || true
-
-    # =========================
-    # CLEAN BUILD CACHE
-    # =========================
-    - name: Clean build cache
+    - name: Force env
       run: |
-        rm -rf .buildozer
+        export ANDROIDSDK=$HOME/android-sdk
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
 
-    # =========================
-    # BUILD APK
-    # =========================
     - name: Build APK
-      run: |
-        buildozer android debug
+      run: buildozer android debug
 
-    # =========================
-    # UPLOAD APK
-    # =========================
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
