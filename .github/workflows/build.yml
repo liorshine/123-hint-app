@@ -1,4 +1,4 @@
-name: Build APK (Docker)
+name: Build APK
 
 on:
   push:
@@ -8,27 +8,47 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # 🔥 QUAN TRỌNG: dùng docker buildozer ổn định nhất
     container:
       image: kivy/buildozer:latest
 
+    env:
+      BUILDOZER_ALLOW_ROOT: 1
+      PYTHONUNBUFFERED: 1
+
     steps:
+    # ========================
+    # CHECKOUT CODE
+    # ========================
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # ========================
+    # CHECK ENV
+    # ========================
     - name: Show environment
       run: |
         python --version
         buildozer --version
 
-    - name: Clean build
+    # ========================
+    # CLEAN CACHE
+    # ========================
+    - name: Clean build folders
       run: |
         rm -rf .buildozer
         rm -rf bin
 
+    # ========================
+    # BUILD APK
+    # ========================
     - name: Build APK
       run: |
-        buildozer android debug
+        buildozer -v android debug
 
+    # ========================
+    # UPLOAD APK
+    # ========================
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
