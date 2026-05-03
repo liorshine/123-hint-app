@@ -12,39 +12,80 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # ========================
+    # 1. SETUP PYTHON
+    # ========================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
+    # ========================
+    # 2. SYSTEM DEPENDENCIES
+    # ========================
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          git zip unzip openjdk-17-jdk \
-          build-essential autoconf automake libtool pkg-config \
+          git zip unzip wget \
+          openjdk-17-jdk \
+          build-essential \
+          autoconf automake libtool pkg-config \
           libffi-dev libssl-dev
 
-    - name: Install Python dependencies
+    # ========================
+    # 3. PYTHON TOOLS
+    # ========================
+    - name: Install Python tools
       run: |
-        pip install --upgrade pip setuptools wheel
+        python -m pip install --upgrade pip setuptools wheel
         pip install cython buildozer
 
-    - name: Install Android SDK components
+    # ========================
+    # 4. ANDROID SDK (FULL FIX)
+    # ========================
+    - name: Setup Android SDK
       run: |
-        yes | sdkmanager --licenses
-        yes | sdkmanager "platform-tools"
-        yes | sdkmanager "platforms;android-31"
-        yes | sdkmanager "build-tools;34.0.0"
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        mkdir -p $ANDROID_SDK_ROOT
 
+        cd $HOME
+
+        # Download Android command line tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
+
+        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        unzip cmdline.zip -d $ANDROID_SDK_ROOT/cmdline-tools
+
+        mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
+
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
+
+        # Accept licenses
+        yes | sdkmanager --licenses
+
+        # Install required packages
+        sdkmanager "platform-tools"
+        sdkmanager "platforms;android-31"
+        sdkmanager "build-tools;34.0.0"
+
+    # ========================
+    # 5. CLEAN CACHE
+    # ========================
     - name: Clean buildozer cache
       run: |
         rm -rf .buildozer
 
+    # ========================
+    # 6. BUILD APK
+    # ========================
     - name: Build APK
       run: |
         buildozer android debug
 
+    # ========================
+    # 7. UPLOAD APK
+    # ========================
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
