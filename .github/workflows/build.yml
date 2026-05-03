@@ -23,15 +23,24 @@ jobs:
         pip install --upgrade pip
         pip install cython buildozer
 
-    - name: Nuke old buildozer SDK
+    # =========================
+    # WIPE BUILD CACHE (QUAN TRỌNG)
+    # =========================
+    - name: Nuke buildozer SDK
       run: |
-        rm -rf ~/.buildozer/android/platform/android-sdk
+        rm -rf ~/.buildozer
+        rm -rf ~/.android
 
-    - name: Setup Android SDK (manual)
+    # =========================
+    # SETUP ANDROID SDK
+    # =========================
+    - name: Setup Android SDK
       run: |
         export ANDROID_SDK_ROOT=$HOME/android-sdk
-        mkdir -p $ANDROID_SDK_ROOT
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
+        mkdir -p $ANDROID_SDK_ROOT
         cd $HOME
 
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
@@ -49,14 +58,20 @@ jobs:
         sdkmanager "platforms;android-31"
         sdkmanager "build-tools;34.0.0"
 
-    - name: Force env
-      run: |
-        export ANDROIDSDK=$HOME/android-sdk
-        export ANDROID_SDK_ROOT=$HOME/android-sdk
-
+    # =========================
+    # BUILD APK (FORCE ENV)
+    # =========================
     - name: Build APK
-      run: buildozer android debug
+      run: |
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        export ANDROIDSDK=$HOME/android-sdk
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
+        buildozer android debug
+
+    # =========================
+    # UPLOAD APK
+    # =========================
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
